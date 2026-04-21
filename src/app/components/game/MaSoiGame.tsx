@@ -240,7 +240,7 @@ const QUESTIONS: Question[] = [
 /* ════════════════════════════════════════════
    ROLES
 ════════════════════════════════════════════ */
-type RoleId = "wolf" | "villager" | "detective" | "doctor" | "witch";
+type RoleId = "wolf" | "villager" | "detective" | "doctor";
 
 interface Role {
   id: RoleId;
@@ -278,19 +278,13 @@ const ROLES: Record<RoleId, Role> = {
     team: "village",
   },
   doctor: {
-    id: "doctor", name: "Thầy Thuốc", nameEn: "DOCTOR", icon: "⚕",
+    id: "doctor", name: "Người Bảo Vệ", nameEn: "GUARD", icon: "🛡",
     color: C.teal, borderColor: C.borderTeal, bg: "rgba(46,196,182,0.06)",
-    description: "Bạn có thể cứu sống người bị tấn công. Mỗi đêm bảo vệ 1 người.",
+    description: "Bạn bảo vệ làng khỏi Sói. Mỗi đêm chọn 1 người để bảo vệ.",
     power: "Mỗi đêm: Chọn 1 người để bảo vệ. Nếu họ bị Sói tấn công, họ sẽ sống.",
     team: "village",
   },
-  witch: {
-    id: "witch", name: "Phù Thủy", nameEn: "WITCH", icon: "🧙",
-    color: C.purple, borderColor: "rgba(123,94,167,0.35)", bg: "rgba(123,94,167,0.08)",
-    description: "Bạn có 2 bình thuốc: 1 cứu sống và 1 tiêu diệt. Mỗi bình dùng 1 lần.",
-    power: "Thuốc Cứu: Hồi sinh người bị giết. Thuốc Độc: Loại 1 người bất kỳ. Mỗi thứ dùng 1 lần.",
-    team: "village",
-  },
+
 };
 
 /* ════════════════════════════════════════════
@@ -299,9 +293,9 @@ const ROLES: Record<RoleId, Role> = {
 function generateRoles(count: number): RoleId[] {
   if (count <= 5)  return ["wolf", "detective", "doctor", "villager", "villager"];
   if (count === 6) return ["wolf", "wolf", "detective", "doctor", "villager", "villager"];
-  if (count === 7) return ["wolf", "wolf", "detective", "doctor", "witch", "villager", "villager"];
-  if (count === 8) return ["wolf", "wolf", "detective", "doctor", "witch", "villager", "villager", "villager"];
-  return               ["wolf", "wolf", "detective", "doctor", "witch", "villager", "villager", "villager", "villager"];
+  if (count === 7) return ["wolf", "wolf", "detective", "doctor", "villager", "villager", "villager"];
+  if (count === 8) return ["wolf", "wolf", "detective", "doctor", "villager", "villager", "villager", "villager"];
+  return               ["wolf", "wolf", "detective", "doctor", "villager", "villager", "villager", "villager", "villager"];
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -333,11 +327,7 @@ interface NightState {
   doctorProtects: number | null;  // player id
   detectiveChecks: number | null; // player id
   detectiveResult: boolean | null; // is wolf?
-  witchSave: boolean;
-  witchKill: number | null;
-  witchSaveUsed: boolean;
-  witchKillUsed: boolean;
-  step: "wolf" | "doctor" | "detective" | "witch" | "done";
+  step: "wolf" | "doctor" | "detective" | "done";
 }
 
 interface VoteState {
@@ -364,8 +354,6 @@ interface GameState {
   totalRounds: number;
   roleRevealIndex: number; // which player is being shown their role
   log: string[]; // host-only action log
-  witchSaveUsed: boolean; // persists across rounds
-  witchKillUsed: boolean; // persists across rounds
 }
 
 /* ════════════════════════════════════════════
@@ -572,11 +560,10 @@ function TimerBar({ seconds, total, onExpire }: { seconds:number; total:number; 
 /* ════════════════════════════════════════════
    INITIAL STATE
 ════════════════════════════════════════════ */
-function makeNightState(witchSaveUsed = false, witchKillUsed = false): NightState {
+function makeNightState(): NightState {
   return {
     wolfTarget:null, doctorProtects:null, detectiveChecks:null,
-    detectiveResult:null, witchSave:false, witchKill:null,
-    witchSaveUsed, witchKillUsed, step:"wolf",
+    detectiveResult:null, step:"wolf",
   };
 }
 function makeVoteState(): VoteState {
@@ -836,17 +823,15 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
 }) {
   const [ns, setNs] = useState<NightState>(night);
   const alive = players.filter(p=>p.alive);
-  const hasWitch = players.some(p=>p.role==="witch" && p.alive);
 
-  const stepOrder: NightState["step"][] = ["wolf","doctor","detective","witch","done"];
+  const stepOrder: NightState["step"][] = ["wolf","doctor","detective","done"];
 
   const steps = [
     { id:"wolf",      label:"SÓI THỨC",        icon:"🐺", color:C.red,    desc:"Sói bí mật chỉ định 1 người để tấn công đêm nay" },
-    { id:"doctor",    label:"THẦY THUỐC THỨC",  icon:"⚕", color:C.teal,   desc:"Thầy thuốc chọn 1 người để bảo vệ khỏi Sói đêm nay" },
+    { id:"doctor",    label:"NGƯỜI BẢO VỆ THỨC", icon:"🛡", color:C.teal,   desc:"Người bảo vệ chọn 1 người để bảo vệ khỏi Sói đêm nay" },
     { id:"detective", label:"THÁM TỬ THỨC",      icon:"🔍", color:C.gold,   desc:"Thám tử điều tra 1 người — Host sẽ tiết lộ kết quả bí mật" },
-    { id:"witch",     label:"PHÙ THỦY THỨC",     icon:"🧙", color:C.purple, desc:"Phù thủy quyết định dùng thuốc cứu hay thuốc độc (nếu còn)" },
     { id:"done",      label:"BÌNH MINH",          icon:"☀", color:C.amber,  desc:"Tất cả đã hành động. Chuyển sang giai đoạn ban ngày." },
-  ].filter(s => s.id !== "witch" || hasWitch);
+  ];
 
   const currentStep = steps.find(s=>s.id===ns.step) ?? steps[steps.length-1];
 
@@ -869,8 +854,6 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
     const idx = stepOrder.indexOf(ns.step);
     const next = stepOrder[idx+1] ?? "done";
     if (next==="done") {
-      onNightDone(ns);
-    } else if (next==="witch" && !hasWitch) {
       onNightDone(ns);
     } else {
       setNs(n=>({...n, step:next as NightState["step"]}));
@@ -929,49 +912,14 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
               </p>
             </div>
           )}
-
-          {/* Witch choices */}
-          {ns.step==="witch" && (
-            <div style={{ display:"flex", gap:10, marginTop:12 }}>
-              {/* CỨU: chỉ hiện khi mục tiêu sói KHÔNG phải chính phù thủy */}
-              {!ns.witchSaveUsed && ns.wolfTarget &&
-                players.find(p=>p.id===ns.wolfTarget)?.role !== "witch" && (
-                <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}}
-                  onClick={()=>setNs(n=>({...n,witchSave:true,witchSaveUsed:true}))}
-                  style={{ flex:1, padding:"11px", background:`${C.teal}18`,
-                    border:`1px solid ${C.teal}`, color:C.teal, fontFamily:MONO, fontSize:10,
-                    cursor:"pointer", letterSpacing:"0.1em" }}>
-                  ⚗ Dùng thuốc CỨU{!ns.witchSaveUsed?"":" (đã dùng)"}
-                </motion.button>
-              )}
-              {!ns.witchKillUsed && (
-                <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}}
-                  onClick={()=>{
-                    const target = alive.find(p=>p.id!==ns.wolfTarget && p.role!=="witch");
-                    if(target) setNs(n=>({...n,witchKill:target.id,witchKillUsed:true}));
-                  }}
-                  style={{ flex:1, padding:"11px", background:`${C.red}18`,
-                    border:`1px solid ${C.red}`, color:C.red, fontFamily:MONO, fontSize:10,
-                    cursor:"pointer", letterSpacing:"0.1em" }}>
-                  💀 Dùng thuốc ĐỘC
-                </motion.button>
-              )}
-              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}} onClick={advanceStep}
-                style={{ flex:1, padding:"11px", background:"transparent",
-                  border:`1px solid ${C.muted}`, color:C.dim, fontFamily:MONO, fontSize:10,
-                  cursor:"pointer" }}>
-                Bỏ qua →
-              </motion.button>
-            </div>
-          )}
         </motion.div>
 
         {/* Player grid */}
-        {ns.step !== "done" && ns.step !== "witch" && (
+        {ns.step !== "done" && (
           <div style={{ marginBottom:20 }}>
             <p style={{ color:C.muted, fontFamily:MONO, fontSize:9, letterSpacing:"0.16em", marginBottom:12 }}>
-              {ns.step==="wolf" ? "Chọn nạn nhân (Sói quyết định — không thể chọn Sói khác):"
-              :ns.step==="doctor" ? "Chọn người cần bảo vệ:"
+              {ns.step==="wolf" ? "Sói chọn mục tiêu (bí mật — không hiện cho người khác):"
+              :ns.step==="doctor" ? "Người bảo vệ chọn đối tượng cần bảo vệ:"
               :"Chọn người cần điều tra (không thể tự soi mình):"}
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))", gap:10 }}>
@@ -987,7 +935,8 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
                 const isTarget  = ns.wolfTarget===p.id;
                 const isProtect = ns.doctorProtects===p.id;
                 const isChecked = ns.detectiveChecks===p.id;
-                const hl = isWolfStep&&isTarget?"target"
+                // Wolf target is kept hidden to prevent information leak
+                const hl = isWolfStep ? undefined
                   : ns.step==="doctor"&&isProtect?"protect"
                   : isDetectiveStep&&isChecked?"check"
                   : undefined;
@@ -1647,8 +1596,6 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
     totalRounds:0,
     roleRevealIndex:0,
     log:[],
-    witchSaveUsed:false,
-    witchKillUsed:false,
   });
 
   /* ── Pick question by difficulty ── */
@@ -1691,7 +1638,7 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
       if (next>=s.players.length) {
         // All roles revealed → start night
         const q = pickQuestion(s.difficulty, s.usedQuestionIds);
-        return {...s, screen:"night", nightState:makeNightState(s.witchSaveUsed, s.witchKillUsed), currentQuestion:q};
+        return {...s, screen:"night", nightState:makeNightState(), currentQuestion:q};
       }
       return {...s, roleRevealIndex:next};
     });
@@ -1704,14 +1651,8 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
       let attackedId = ns.wolfTarget;
       let nightSaved = false;
 
-      // Doctor protection
+      // Doctor (guard) protection
       if (ns.doctorProtects===ns.wolfTarget) nightSaved=true;
-      // Witch save
-      if (ns.witchSave) nightSaved=true;
-
-      // Persist witch potion usage across rounds
-      const witchSaveUsed = s.witchSaveUsed || ns.witchSaveUsed;
-      const witchKillUsed = s.witchKillUsed || ns.witchKillUsed;
 
       return {...s,
         screen:"question",
@@ -1719,8 +1660,6 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
         attackedPlayerId:attackedId,
         eliminatedThisRound:nightSaved?null:attackedId,
         questionAnswered:null,
-        witchSaveUsed,
-        witchKillUsed,
       };
     });
   }
@@ -1740,7 +1679,6 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
       // Update players
       let players = s.players.map(p=>{
         if (p.id===eliminated && !correct) return {...p, alive:false, roleRevealed:true};
-        if (s.nightState.witchKill && p.id===s.nightState.witchKill) return {...p, alive:false, roleRevealed:true};
         return p;
       });
 
@@ -1806,7 +1744,7 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
       return {...s,
         screen:"night",
         round:s.round+1,
-        nightState:makeNightState(s.witchSaveUsed, s.witchKillUsed),
+        nightState:makeNightState(),
         voteState:makeVoteState(),
         currentQuestion:q,
         attackedPlayerId:null,
