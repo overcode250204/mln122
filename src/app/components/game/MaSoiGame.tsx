@@ -956,26 +956,9 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
           </div>
         )}
 
-        {/* Night summary */}
-        {ns.wolfTarget && (
-          <div style={{ padding:"12px 16px", background:`${C.red}0c`, border:`1px solid ${C.red}22`, marginBottom:12 }}>
-            <p style={{ color:C.muted, fontFamily:MONO, fontSize:8.5 }}>Sói nhắm tới:</p>
-            <p style={{ color:C.red, fontFamily:SANS, fontSize:15, fontWeight:700 }}>
-              🐺 {players.find(p=>p.id===ns.wolfTarget)?.name}
-            </p>
-          </div>
-        )}
-        {ns.doctorProtects && (
-          <div style={{ padding:"12px 16px", background:`${C.teal}0c`, border:`1px solid ${C.teal}22`, marginBottom:12 }}>
-            <p style={{ color:C.muted, fontFamily:MONO, fontSize:8.5 }}>Thầy thuốc bảo vệ:</p>
-            <p style={{ color:C.teal, fontFamily:SANS, fontSize:15, fontWeight:700 }}>
-              ⚕ {players.find(p=>p.id===ns.doctorProtects)?.name}
-            </p>
-          </div>
-        )}
 
         {/* Advance button */}
-        {ns.step !== "witch" && (
+        {(
           <motion.button whileHover={canAdvance?{scale:1.03,boxShadow:`0 0 30px ${C.amber}40`}:{}}
             whileTap={canAdvance?{scale:0.97}:{}}
             onClick={canAdvance ? advanceStep : undefined}
@@ -1052,15 +1035,6 @@ function QuestionScreen({ question, attackedName, players, round, onAnswer, scor
           <ScoreStrip score={score} correct={correct} round={round} />
         </div>
 
-        {/* Attack announcement */}
-        <motion.div initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} transition={{duration:0.5}}
-          style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px",
-            background:`${C.red}12`, border:`1px solid ${C.red}40`, marginBottom:16 }}>
-          <span style={{ fontSize:22 }}>🌅</span>
-          <p style={{ color:C.white, fontFamily:SANS, fontSize:16, fontWeight:600 }}>
-            <span style={{ color:C.red }}>{attackedName}</span> bị Sói tấn công đêm qua!
-          </p>
-        </motion.div>
 
         {/* Timer */}
         {!revealed && (
@@ -1083,7 +1057,7 @@ function QuestionScreen({ question, attackedName, players, round, onAnswer, scor
                 :"✗ Sai! Nạn nhân bị loại khỏi làng!"}
               </p>
               <p style={{ color:isCorrect?`${C.teal}cc`:`${C.red}cc`, fontFamily:MONO, fontSize:9.5 }}>
-                {isCorrect?`${attackedName} được cứu sống!`:`${attackedName} rời khỏi làng.`}
+                {isCorrect?"Nạn nhân được cứu sống!":"Nạn nhân rời khỏi làng."}
               </p>
             </motion.div>
           )}
