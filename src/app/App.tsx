@@ -927,48 +927,11 @@ export default function App() {
         </ContentWrap>
       </section>
 
-      {/* ════════════════════════════════════
-          § REVIEW — Câu hỏi Ôn tập
-      ════════════════════════════════════ */}
-      <section style={{ position: "relative", overflow: "hidden", padding: "90px 0" }}>
-        <img src={IMG.parchment} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "sepia(45%) brightness(0.85)", opacity: 0.15 }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <ContentWrap>
-            <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <div style={{ height: 1, width: 40, background: P.accent, opacity: 0.5 }} /><Ornament size={14} /><div style={{ height: 1, width: 40, background: P.accent, opacity: 0.5 }} />
-              </div>
-              <p style={{ color: P.primary, fontSize: 12, fontFamily: SERIF, fontStyle: "italic", marginBottom: 10 }}>— Câu hỏi ôn tập</p>
-              <h2 style={{ fontFamily: DISPLAY, fontSize: "clamp(24px,3.5vw,38px)", fontWeight: 300, color: P.dark }}>Câu hỏi Ôn tập — Chương III</h2>
-            </FadeIn>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
-              {[
-                "Phân biệt giá trị thặng dư tuyệt đối và tương đối. Cho ví dụ minh họa cụ thể trong bối cảnh hiện đại.",
-                "Tại sao công nghệ 4.0 là yếu tố quyết định trong việc tạo ra giá trị thặng dư siêu ngạch hiện nay?",
-                "Phân tích ba cơ chế chính mà công nghệ tác động đến sự hình thành giá trị thặng dư siêu ngạch.",
-                "Liên hệ thực tiễn: Chọn một doanh nghiệp Việt Nam và phân tích cơ chế tạo GTTSN của họ.",
-                "Tại sao việc theo đuổi GTTSN lại tạo ra mâu thuẫn xã hội? Cần điều tiết như thế nào?",
-                "Nêu ý nghĩa của GTTSN đối với chiến lược phát triển kinh tế Việt Nam đến năm 2045.",
-              ].map((q, i) => (
-                <FadeIn key={i} delay={(i % 2) * 0.1}>
-                  <motion.div
-                    whileHover={{ backgroundColor: P.bgLight, borderColor: P.accent }}
-                    style={{ display: "flex", gap: 16, padding: "20px 22px", background: P.bgLight, border: `1px solid ${P.rule}`, transition: "all 0.3s" }}
-                  >
-                    <div style={{ flexShrink: 0, width: 30, height: 30, border: `1px solid ${P.accent}60`, display: "flex", alignItems: "center", justifyContent: "center", background: `${P.accent}12` }}>
-                      <span style={{ color: P.accent, fontSize: 14, fontFamily: DISPLAY, fontStyle: "italic" }}>{i + 1}</span>
-                    </div>
-                    <p style={{ color: P.dark, fontSize: 16.5, lineHeight: 1.85, fontFamily: SERIF }}>{q}</p>
-                  </motion.div>
-                </FadeIn>
-              ))}
-            </div>
-
-            {/* AI Usage Section */}
-            <AIUsageSection />
-          </ContentWrap>
-        </div>
+      {/* AI Usage Section */}
+      <section style={{ background: P.bgDark, padding: "60px 0" }}>
+        <ContentWrap>
+          <AIUsageSection />
+        </ContentWrap>
       </section>
 
       {/* ── Footer ── */}

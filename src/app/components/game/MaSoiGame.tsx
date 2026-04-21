@@ -839,14 +839,13 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
   const hasWitch = players.some(p=>p.role==="witch" && p.alive);
 
   const stepOrder: NightState["step"][] = ["wolf","doctor","detective","witch","done"];
-  const stepIndex = stepOrder.indexOf(ns.step);
 
   const steps = [
-    { id:"wolf", label:"SÓI THỨC", icon:"🐺", color:C.red, who:"Sói chọn nạn nhân", desc:"Sói bí mật chỉ định 1 người để tấn công đêm nay" },
-    { id:"doctor", label:"THẦY THUỐC THỨC", icon:"⚕", color:C.teal, who:"Thầy thuốc chọn bảo vệ", desc:"Thầy thuốc chọn 1 người để bảo vệ khỏi Sói đêm nay" },
-    { id:"detective", label:"THÁM TỬ THỨC", icon:"🔍", color:C.gold, who:"Thám tử điều tra", desc:"Thám tử điều tra 1 người — Host sẽ tiết lộ kết quả bí mật" },
-    { id:"witch", label:"PHÙ THỦY THỨC", icon:"🧙", color:C.purple, who:"Phù thủy hành động", desc:"Phù thủy quyết định dùng thuốc cứu hay thuốc độc (nếu còn)" },
-    { id:"done", label:"BÌNH MINH", icon:"☀", color:C.amber, who:"Kết thúc đêm", desc:"Tất cả đã hành động. Chuyển sang giai đoạn ban ngày." },
+    { id:"wolf",      label:"SÓI THỨC",        icon:"🐺", color:C.red,    desc:"Sói bí mật chỉ định 1 người để tấn công đêm nay" },
+    { id:"doctor",    label:"THẦY THUỐC THỨC",  icon:"⚕", color:C.teal,   desc:"Thầy thuốc chọn 1 người để bảo vệ khỏi Sói đêm nay" },
+    { id:"detective", label:"THÁM TỬ THỨC",      icon:"🔍", color:C.gold,   desc:"Thám tử điều tra 1 người — Host sẽ tiết lộ kết quả bí mật" },
+    { id:"witch",     label:"PHÙ THỦY THỨC",     icon:"🧙", color:C.purple, desc:"Phù thủy quyết định dùng thuốc cứu hay thuốc độc (nếu còn)" },
+    { id:"done",      label:"BÌNH MINH",          icon:"☀", color:C.amber,  desc:"Tất cả đã hành động. Chuyển sang giai đoạn ban ngày." },
   ].filter(s => s.id !== "witch" || hasWitch);
 
   const currentStep = steps.find(s=>s.id===ns.step) ?? steps[steps.length-1];
@@ -864,6 +863,8 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
     const isWolf = players.find(p=>p.id===pid)?.role==="wolf";
     setNs(n=>({...n, detectiveChecks:pid, detectiveResult:isWolf??false}));
   }
+
+
   function advanceStep() {
     const idx = stepOrder.indexOf(ns.step);
     const next = stepOrder[idx+1] ?? "done";
@@ -969,29 +970,34 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
             <p style={{ color:C.muted, fontFamily:MONO, fontSize:9, letterSpacing:"0.16em", marginBottom:12 }}>
               {ns.step==="wolf" ? "Chọn nạn nhân (Sói quyết định — không thể chọn Sói khác):"
               :ns.step==="doctor" ? "Chọn người cần bảo vệ:"
-              :"Chọn người cần điều tra:"}
+              :"Chọn người cần điều tra (không thể tự soi mình):"}
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))", gap:10 }}>
               {alive.map(p => {
+                const isWolfStep      = ns.step === "wolf";
+                const isDetectiveStep = ns.step === "detective";
                 // Wolves cannot target other wolves
-                const isWolfStep = ns.step === "wolf";
                 const isAllyWolf = isWolfStep && p.role === "wolf";
+                // Detective cannot investigate themselves
+                const detectivePlayer = players.find(pl => pl.role === "detective" && pl.alive);
+                const isSelf = isDetectiveStep && detectivePlayer !== undefined && p.id === detectivePlayer.id;
+                const disabled = isAllyWolf || isSelf;
                 const isTarget  = ns.wolfTarget===p.id;
                 const isProtect = ns.doctorProtects===p.id;
                 const isChecked = ns.detectiveChecks===p.id;
                 const hl = isWolfStep&&isTarget?"target"
                   : ns.step==="doctor"&&isProtect?"protect"
-                  : ns.step==="detective"&&isChecked?"check"
+                  : isDetectiveStep&&isChecked?"check"
                   : undefined;
                 return (
                   <PlayerCard key={p.id} player={p}
-                    onClick={isAllyWolf ? undefined : ()=>{
+                    onClick={disabled ? undefined : ()=>{
                       if(ns.step==="wolf") selectWolfTarget(p.id);
                       else if(ns.step==="doctor") selectDoctorProtect(p.id);
                       else if(ns.step==="detective") selectDetective(p.id);
                     }}
                     highlight={hl}
-                    dimmed={isAllyWolf}
+                    dimmed={disabled}
                   />
                 );
               })}
@@ -1749,12 +1755,18 @@ export function MaSoiGame({ onClose }: { onClose:()=>void }) {
 
   /* ── VOTE ── */
   function addVote(pid:number) {
-    setState(s=>({...s,
-      voteState:{...s.voteState, votes:{
-        ...s.voteState.votes,
-        [pid]:(s.voteState.votes[pid]||0)+1,
-      }},
-    }));
+    setState(s=>{
+      const alive = s.players.filter(p=>p.alive);
+      const totalVotes = Object.values(s.voteState.votes).reduce((a,b)=>a+b,0);
+      // Cap total votes at the number of alive players
+      if (totalVotes >= alive.length) return s;
+      return {...s,
+        voteState:{...s.voteState, votes:{
+          ...s.voteState.votes,
+          [pid]:(s.voteState.votes[pid]||0)+1,
+        }},
+      };
+    });
   }
   function revealVote() {
     setState(s=>{
