@@ -933,7 +933,9 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
           {/* Witch choices */}
           {ns.step==="witch" && (
             <div style={{ display:"flex", gap:10, marginTop:12 }}>
-              {!ns.witchSaveUsed && ns.wolfTarget && (
+              {/* CỨU: chỉ hiện khi mục tiêu sói KHÔNG phải chính phù thủy */}
+              {!ns.witchSaveUsed && ns.wolfTarget &&
+                players.find(p=>p.id===ns.wolfTarget)?.role !== "witch" && (
                 <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}}
                   onClick={()=>setNs(n=>({...n,witchSave:true,witchSaveUsed:true}))}
                   style={{ flex:1, padding:"11px", background:`${C.teal}18`,
@@ -1056,7 +1058,7 @@ function QuestionScreen({ question, attackedName, players, round, onAnswer, scor
   const [selected, setSelected] = useState<number|null>(null);
   const [revealed, setRevealed] = useState(false);
   const [expired, setExpired] = useState(false);
-  const timerSecs = diff==="DỄ"?45:diff==="THƯỜNG"?30:20;
+  const timerSecs = diff==="DỄ"?75:diff==="THƯỜNG"?60:50; // +30s từ gốc (DỄ:75s, THƯỜNG:60s, KHÓ:50s)
 
   function choose(idx:number) {
     if (revealed || expired) return;
