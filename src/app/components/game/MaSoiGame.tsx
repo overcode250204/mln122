@@ -823,14 +823,21 @@ function NightScreen({ players, night, round, onNightDone, score, correct }: {
 }) {
   const [ns, setNs] = useState<NightState>(night);
   const alive = players.filter(p=>p.alive);
+  const hasDoctor    = players.some(p=>p.role==="doctor"    && p.alive);
+  const hasDetective = players.some(p=>p.role==="detective" && p.alive);
 
-  const stepOrder: NightState["step"][] = ["wolf","doctor","detective","done"];
+  const stepOrder: NightState["step"][] = [
+    "wolf",
+    ...(hasDoctor    ? ["doctor"]    : []),
+    ...(hasDetective ? ["detective"] : []),
+    "done",
+  ] as NightState["step"][];
 
   const steps = [
-    { id:"wolf",      label:"SÓI THỨC",        icon:"🐺", color:C.red,    desc:"Sói bí mật chỉ định 1 người để tấn công đêm nay" },
-    { id:"doctor",    label:"NGƯỜI BẢO VỆ THỨC", icon:"🛡", color:C.teal,   desc:"Người bảo vệ chọn 1 người để bảo vệ khỏi Sói đêm nay" },
-    { id:"detective", label:"THÁM TỬ THỨC",      icon:"🔍", color:C.gold,   desc:"Thám tử điều tra 1 người — Host sẽ tiết lộ kết quả bí mật" },
-    { id:"done",      label:"BÌNH MINH",          icon:"☀", color:C.amber,  desc:"Tất cả đã hành động. Chuyển sang giai đoạn ban ngày." },
+    { id:"wolf",      label:"SÓI THỨC",           icon:"🐺", color:C.red,   desc:"Sói bí mật chỉ định 1 người để tấn công đêm nay" },
+    ...(hasDoctor    ? [{ id:"doctor",    label:"NGƯỜI BẢO VỆ THỨC",  icon:"🛡", color:C.teal, desc:"Người bảo vệ chọn 1 người để bảo vệ khỏi Sói đêm nay" }] : []),
+    ...(hasDetective ? [{ id:"detective", label:"THÁM Tử THỨC",       icon:"🔍", color:C.gold, desc:"Thám tử điều tra 1 người — Host sẽ tiết lộ kết quả bí mật" }] : []),
+    { id:"done",      label:"BÌNH MINH",             icon:"☀", color:C.amber, desc:"Tất cả đã hành động. Chuyển sang giai đoạn ban ngày." },
   ];
 
   const currentStep = steps.find(s=>s.id===ns.step) ?? steps[steps.length-1];
